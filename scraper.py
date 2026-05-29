@@ -3,7 +3,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from database import DatabaseManager
 import time
 
 class ZDFheuteScraper:
@@ -14,28 +13,28 @@ class ZDFheuteScraper:
         options.add_argument("--disable-dev-shm-usage")
         options.binary_location = "/usr/bin/chromium" 
         self.driver = webdriver.Chrome(options=options)
-        self.db = DatabaseManager()
 
-    def fetch_and_store(self, max_clicks=2):
+    def fetch_articles(self):
+        articles = []
         try:
             self.driver.get("https://www.zdfheute.de/suche?q=*&type=article")
-            time.sleep(5) # Wartezeit erhöhen
+            wait = WebDriverWait(self.driver, 10)
             
-            # Suche nach den Teaser-Elementen
+            # Klicke 3 Mal auf "Mehr laden"
+            for _ in range(3):
+                try:
+                    btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.button-load-more")))
+                    btn.click()
+                    time.sleep(2)
+                except: break
+            
             elements = self.driver.find_elements(By.CSS_SELECTOR, "div.teaser-standard__body")
-            
-            # WICHTIG: Wenn elements leer ist, drucke etwas in das Log
-            print(f"Gefundene Elemente: {len(elements)}")
-            
-            articles = []
             for el in elements:
                 try:
                     title = el.find_element(By.TAG_NAME, "h3").text
                     url = el.find_element(By.TAG_NAME, "a").get_attribute("href")
-                    articles.append({'title': title, 'url': url, 'category': 'Sonstige'})
+                    articles.append({'title': title, 'URL': url}) # Spalte heißt jetzt 'URL'
                 except: continue
-            
-            if articles:
-                self.db.add_articles(articles)
         finally:
             self.driver.quit()
+        return articles
