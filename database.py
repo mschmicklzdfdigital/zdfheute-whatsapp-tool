@@ -7,20 +7,18 @@ class DatabaseManager:
         self.create_table()
 
     def create_table(self):
-        query = """
-        CREATE TABLE IF NOT EXISTS articles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            url TEXT UNIQUE,
-            category TEXT,
-            timestamp DATETIME
-        )
-        """
-        self.conn.execute(query)
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS articles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                title TEXT, 
+                url TEXT UNIQUE, 
+                category TEXT, 
+                timestamp DATETIME
+            )
+        """)
         self.conn.commit()
 
     def add_articles(self, articles):
-        """Fügt eine Liste von Artikeln hinzu, ignoriert Duplikate via URL."""
         query = "INSERT OR IGNORE INTO articles (title, url, category, timestamp) VALUES (?, ?, ?, ?)"
         for a in articles:
             self.conn.execute(query, (a['title'], a['url'], a['category'], datetime.now()))
