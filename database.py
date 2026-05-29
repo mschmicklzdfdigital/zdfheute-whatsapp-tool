@@ -1,9 +1,12 @@
 import sqlite3
+import os
 from datetime import datetime
 
 class DatabaseManager:
     def __init__(self, db_name="zdf_articles.db"):
-        self.conn = sqlite3.connect(db_name, check_same_thread=False)
+        # Sicherstellen, dass die Datenbank im aktuellen Arbeitsverzeichnis liegt
+        self.db_path = os.path.join(os.getcwd(), db_name)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.create_table()
 
     def create_table(self):
