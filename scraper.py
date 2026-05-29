@@ -16,18 +16,17 @@ class ZDFheuteScraper:
         self.driver = webdriver.Chrome(options=options)
         self.db = DatabaseManager()
 
-    def fetch_and_store(self, max_clicks=5):
+    def fetch_and_store(self, max_clicks=2):
         try:
             self.driver.get("https://www.zdfheute.de/suche?q=*&type=article")
-            wait = WebDriverWait(self.driver, 10)
-            for _ in range(max_clicks):
-                try:
-                    btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.button-load-more")))
-                    btn.click()
-                    time.sleep(2)
-                except: break
+            time.sleep(5) # Wartezeit erhöhen
             
+            # Suche nach den Teaser-Elementen
             elements = self.driver.find_elements(By.CSS_SELECTOR, "div.teaser-standard__body")
+            
+            # WICHTIG: Wenn elements leer ist, drucke etwas in das Log
+            print(f"Gefundene Elemente: {len(elements)}")
+            
             articles = []
             for el in elements:
                 try:
@@ -35,6 +34,8 @@ class ZDFheuteScraper:
                     url = el.find_element(By.TAG_NAME, "a").get_attribute("href")
                     articles.append({'title': title, 'url': url, 'category': 'Sonstige'})
                 except: continue
-            self.db.add_articles(articles)
+            
+            if articles:
+                self.db.add_articles(articles)
         finally:
             self.driver.quit()
