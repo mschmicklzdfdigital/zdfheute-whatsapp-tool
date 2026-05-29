@@ -26,7 +26,7 @@ with col3:
     end_date = st.date_input("Enddatum")
 
 if uploaded_file is not None:
-    # Lade Excel und bereinige Spaltennamen (entfernt Leerzeichen)
+    # Excel einlesen und Spaltennamen bereinigen
     df_excel = pd.read_excel(uploaded_file)
     df_excel.columns = df_excel.columns.str.strip()
     
@@ -35,21 +35,28 @@ if uploaded_file is not None:
             # Scraper ausführen
             ZDFheuteScraper().fetch_and_store(max_clicks=5)
             
-            # Daten aus DB laden
-            db_articles = pd.DataFrame(DatabaseManager().get_all_articles())
+            # Daten aus DB laden und Spalten sicher benennen
+            db_data = DatabaseManager().get_all_articles()
+            db_articles = pd.DataFrame(db_data)
             
-            # Prüfung: Existiert 'URL' in Excel?
-            if 'URL' in df_excel.columns:
-                # Abgleich der URLs
-                missing = db_articles[~db_articles['url'].isin(df_excel['URL'])]
+            # WICHTIG: Hier erzwingen wir die Spaltennamen, damit der Key 'url' existiert
+            if not db_articles.empty:
+                db_articles.columns = ['title', 'url', 'category']
                 
-                st.subheader("Fehlende Artikel auf WhatsApp:")
-                if not missing.empty:
-                    st.dataframe(missing, use_container_width=True)
+                # Prüfung: Existiert 'URL' in Excel?
+                if 'URL' in df_excel.columns:
+                    # Abgleich der URLs
+                    missing = db_articles[~db_articles['url'].isin(df_excel['URL'])]
+                    
+                    st.subheader("Fehlende Artikel auf WhatsApp:")
+                    if not missing.empty:
+                        st.dataframe(missing[['title', 'url']], use_container_width=True)
+                    else:
+                        st.success("Alle Artikel sind bereits auf WhatsApp vorhanden!")
                 else:
-                    st.success("Alle Artikel sind bereits auf WhatsApp vorhanden!")
+                    st.error(f"Fehler: Spalte 'URL' nicht in Excel gefunden. Gefunden: {list(df_excel.columns)}")
             else:
-                st.error(f"Fehler: Spalte 'URL' nicht gefunden. Gefundene Spalten: {list(df_excel.columns)}")
+                st.warning("Keine Artikel in der Datenbank gefunden.")
 
 st.markdown("---")
 st.markdown("###### Du hast Feedback oder dir ist etwas aufgefallen? 🧡")
